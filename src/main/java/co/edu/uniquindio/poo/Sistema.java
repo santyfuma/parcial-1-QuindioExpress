@@ -217,19 +217,58 @@ public class Sistema {
      * Inserta el paquete en la posición correcta de la lista ordenada
      * por código, manteniendo el orden ascendente.
      *
-     * <p>Por ahora se implementa con búsqueda lineal (insert position).
-     * En la Sesión 6 se reemplazará por una versión con búsqueda binaria
-     * recursiva, para mantener la coherencia con el resto del sistema.</p>
+     * <p>La posición de inserción se calcula con una <b>búsqueda binaria
+     * recursiva</b>, aprovechando que la lista ya está ordenada. Esto
+     * mantiene la coherencia: tanto la inserción como la búsqueda usan
+     * el mismo enfoque O(log n).</p>
+     *
+     * <p><b>Precondición:</b> {@code paquetesOrdenadosPorCodigo} debe
+     * estar ordenada por código ascendente.</p>
      *
      * @param paquete paquete a insertar
      */
     private void insertarOrdenadoPorCodigo(Paquete paquete) {
-        int posicion = 0;
-        while (posicion < paquetesOrdenadosPorCodigo.size()
-                && paquetesOrdenadosPorCodigo.get(posicion).compareTo(paquete) < 0) {
-            posicion++;
-        }
+        int posicion = encontrarPosicionInsercion(
+                paquete.getCodigo(),
+                0,
+                paquetesOrdenadosPorCodigo.size() - 1
+        );
         paquetesOrdenadosPorCodigo.add(posicion, paquete);
+    }
+
+    /**
+     * Búsqueda binaria recursiva que calcula la posición donde debe
+     * insertarse un código para mantener la lista ordenada.
+     *
+     * <p>Si el código no existe (caso normal en este sistema, porque
+     * el {@code Sistema} genera códigos únicos), retorna el índice
+     * donde debería quedar para que la lista siga ordenada.</p>
+     *
+     * @param codigo código a insertar
+     * @param inicio índice inferior del rango actual
+     * @param fin índice superior del rango actual
+     * @return índice donde debe insertarse el código
+     */
+    private int encontrarPosicionInsercion(String codigo, int inicio, int fin) {
+        // CASO BASE 1: rango vacío → la posición es 'inicio'
+        if (inicio > fin) {
+            return inicio;
+        }
+
+        int medio = inicio + (fin - inicio) / 2;
+        String codigoMedio = paquetesOrdenadosPorCodigo.get(medio).getCodigo();
+        int comparacion = codigoMedio.compareTo(codigo);
+
+        if (comparacion < 0) {
+            // El código del medio es menor → buscar en la mitad derecha
+            return encontrarPosicionInsercion(codigo, medio + 1, fin);
+        } else if (comparacion > 0) {
+            // El código del medio es mayor → buscar en la mitad izquierda
+            return encontrarPosicionInsercion(codigo, inicio, medio - 1);
+        } else {
+            // CASO BASE 2: el código ya existe → retornar su posición
+            return medio;
+        }
     }
 
     /**
@@ -492,6 +531,86 @@ public class Sistema {
             System.out.println(m);
         }
     }
+
+    // ==================== BÚSQUEDA BINARIA RECURSIVA ====================
+
+    /**
+     * Busca un paquete por su código usando <b>búsqueda binaria recursiva</b>.
+     *
+     * <p><b>Precondición:</b> la lista {@code paquetesOrdenadosPorCodigo}
+     * debe estar ordenada por código ascendente. Esto se garantiza
+     * manteniéndola ordenada en cada inserción.</p>
+     *
+     * <p><b>Complejidad:</b> O(log n), porque en cada llamada se descarta
+     * la mitad del rango de búsqueda.</p>
+     *
+     * @param codigo código del paquete a buscar (ej: "PQ105")
+     * @return el paquete encontrado
+     * @throws IllegalArgumentException si el código es nulo o vacío
+     * @throws java.util.NoSuchElementException si no existe un paquete con ese código
+     */
+    public Paquete buscarPaquetePorCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("El código de búsqueda no puede ser nulo ni vacío.");
+        }
+
+        Paquete encontrado = busquedaBinariaRecursiva(
+                codigo,
+                0,
+                paquetesOrdenadosPorCodigo.size() - 1
+        );
+
+        if (encontrado == null) {
+            throw new java.util.NoSuchElementException(
+                    "No existe un paquete con el código " + codigo
+            );
+        }
+        return encontrado;
+    }
+
+    /**
+     * Búsqueda binaria recursiva que localiza un paquete por código
+     * dentro del rango {@code [inicio, fin]} de la lista ordenada.
+     *
+     * <p><b>Análisis recursivo:</b></p>
+     * <ul>
+     *   <li><b>Caso base (no encontrado):</b> {@code inicio > fin} → retorna {@code null}.</li>
+     *   <li><b>Caso base (encontrado):</b> el código del medio coincide → retorna el paquete.</li>
+     *   <li><b>Caso recursivo:</b> el código del medio es menor o mayor →
+     *       se reduce el rango a la mitad y se llama recursivamente.</li>
+     *   <li><b>Cómo se avanza hacia el caso base:</b> cada llamada reduce
+     *       el rango a la mitad ({@code medio + 1} o {@code medio - 1}).</li>
+     *   <li><b>Parámetros que cambian:</b> {@code inicio} y {@code fin}.</li>
+     * </ul>
+     *
+     * @param codigo código buscado (constante en todas las llamadas)
+     * @param inicio índice inferior del rango actual
+     * @param fin índice superior del rango actual
+     * @return el paquete encontrado, o {@code null} si no existe
+     */
+    private Paquete busquedaBinariaRecursiva(String codigo, int inicio, int fin) {
+        // CASO BASE 1: rango vacío → no se encontró
+        if (inicio > fin) {
+            return null;
+        }
+
+        int medio = inicio + (fin - inicio) / 2;
+        Paquete paqueteMedio = paquetesOrdenadosPorCodigo.get(medio);
+        int comparacion = paqueteMedio.getCodigo().compareTo(codigo);
+
+        if (comparacion == 0) {
+            // CASO BASE 2: encontrado
+            return paqueteMedio;
+        } else if (comparacion < 0) {
+            // El código del medio es menor → buscar en la mitad derecha
+            return busquedaBinariaRecursiva(codigo, medio + 1, fin);
+        } else {
+            // El código del medio es mayor → buscar en la mitad izquierda
+            return busquedaBinariaRecursiva(codigo, inicio, medio - 1);
+        }
+    }
+
+
 
 
 
