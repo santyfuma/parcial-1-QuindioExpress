@@ -610,6 +610,117 @@ public class Sistema {
         }
     }
 
+    // ==================== MÉTODOS RECURSIVOS ====================
+
+    /**
+     * Calcula el peso total de todos los paquetes registrados cuyo destino
+     * coincide con el municipio indicado.
+     *
+     * <p><b>Implementación recursiva:</b> suma los pesos uno a uno, avanzando
+     * por la lista de paquetes registrados. No usa bucles, según exige el
+     * enunciado para las operaciones recursivas.</p>
+     *
+     * <p><b>Complejidad:</b> O(n), porque se recorre toda la lista una sola vez.</p>
+     *
+     * @param municipio municipio a consultar
+     * @return el peso total en kilogramos (0.0 si no hay paquetes para ese municipio)
+     * @throws IllegalArgumentException si el municipio es nulo
+     */
+    public float pesoTotalPorMunicipio(Municipio municipio) {
+        if (municipio == null) {
+            throw new IllegalArgumentException("El municipio no puede ser nulo.");
+        }
+        return pesoTotalPorMunicipioRec(municipio, 0);
+    }
+
+    /**
+     * Método recursivo auxiliar para calcular el peso total.
+     *
+     * <p><b>Análisis recursivo:</b></p>
+     * <ul>
+     *   <li><b>Caso base:</b> {@code indice == paquetesRegistrados.size()} →
+     *       no quedan paquetes por revisar → retorna {@code 0.0f}.</li>
+     *   <li><b>Caso recursivo:</b> sumar (si aplica) el peso del paquete
+     *       en la posición {@code indice} y llamar con {@code indice + 1}.</li>
+     *   <li><b>Cómo se avanza:</b> el índice aumenta en 1 en cada llamada.</li>
+     *   <li><b>Parámetros:</b> {@code municipio} (constante) e {@code indice} (variable).</li>
+     * </ul>
+     *
+     * @param municipio municipio a filtrar
+     * @param indice posición actual en la lista
+     * @return el peso total desde {@code indice} hasta el final
+     */
+    private float pesoTotalPorMunicipioRec(Municipio municipio, int indice) {
+        // CASO BASE: no quedan paquetes por revisar
+        if (indice == paquetesRegistrados.size()) {
+            return 0.0f;
+        }
+
+        // CASO RECURSIVO
+        Paquete actual = paquetesRegistrados.get(indice);
+        float pesoActual = 0.0f;
+
+        if (actual.getDestino() == municipio) {
+            pesoActual = actual.getPeso();
+        }
+
+        return pesoActual + pesoTotalPorMunicipioRec(municipio, indice + 1);
+    }
+
+    /**
+     * Cuenta cuántos paquetes registrados tienen una prioridad mayor o
+     * igual a la indicada.
+     *
+     * <p><b>Ejemplo:</b> si las prioridades son {@code 5, 2, 4, 1, 5, 3, 4}
+     * y se consulta una prioridad mínima de 4, el resultado es {@code 4}
+     * (los paquetes con prioridad 5, 4, 5 y 4).</p>
+     *
+     * <p><b>Implementación recursiva</b> (sin bucles), según exige el enunciado.</p>
+     *
+     * @param prioridadMinima valor mínimo de prioridad a considerar (1 a 5)
+     * @return cantidad de paquetes con prioridad &gt;= {@code prioridadMinima}
+     * @throws IllegalArgumentException si la prioridad no está entre 1 y 5
+     */
+    public int contarPaquetesConPrioridadMinima(int prioridadMinima) {
+        if (prioridadMinima < 1 || prioridadMinima > 5) {
+            throw new IllegalArgumentException("La prioridad debe estar entre 1 y 5.");
+        }
+        return contarPaquetesConPrioridadMinimaRec(prioridadMinima, 0);
+    }
+
+    /**
+     * Método recursivo auxiliar para contar paquetes por prioridad mínima.
+     *
+     * <p><b>Análisis recursivo:</b></p>
+     * <ul>
+     *   <li><b>Caso base:</b> {@code indice == paquetesRegistrados.size()} →
+     *       no quedan paquetes → retorna {@code 0}.</li>
+     *   <li><b>Caso recursivo:</b> aportar 1 si el paquete cumple la
+     *       condición, 0 si no, y llamar con {@code indice + 1}.</li>
+     *   <li><b>Cómo se avanza:</b> el índice aumenta en 1.</li>
+     *   <li><b>Parámetros:</b> {@code prioridadMinima} (constante) e
+     *       {@code indice} (variable).</li>
+     * </ul>
+     *
+     * @param prioridadMinima prioridad mínima a contar
+     * @param indice posición actual en la lista
+     * @return cantidad de paquetes con prioridad suficiente, desde {@code indice} al final
+     */
+    private int contarPaquetesConPrioridadMinimaRec(int prioridadMinima, int indice) {
+        // CASO BASE: no quedan paquetes por revisar
+        if (indice == paquetesRegistrados.size()) {
+            return 0;
+        }
+
+        // CASO RECURSIVO
+        Paquete actual = paquetesRegistrados.get(indice);
+        int aporte = (actual.getPrioridad() >= prioridadMinima) ? 1 : 0;
+
+        return aporte + contarPaquetesConPrioridadMinimaRec(prioridadMinima, indice + 1);
+    }
+
+
+
 
 
 
