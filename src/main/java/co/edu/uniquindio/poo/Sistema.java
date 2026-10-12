@@ -719,8 +719,75 @@ public class Sistema {
         return aporte + contarPaquetesConPrioridadMinimaRec(prioridadMinima, indice + 1);
     }
 
+    // ==================== DIVIDE Y VENCERÁS ====================
+
+    /**
+     * Encuentra el paquete de mayor peso entre todos los paquetes registrados
+     * en la jornada, aplicando la estrategia <b>divide y vencerás</b>.
+     *
+     * <p><b>Estrategia:</b></p>
+     * <ol>
+     *   <li><b>Dividir:</b> partir el rango en dos mitades.</li>
+     *   <li><b>Conquistar:</b> encontrar el mayor en cada mitad recursivamente.</li>
+     *   <li><b>Combinar:</b> devolver el mayor de los dos resultados.</li>
+     * </ol>
+     *
+     * <p><b>Complejidad:</b> O(n). Aunque se divide en mitades, todos los
+     * elementos deben ser revisados al menos una vez.</p>
+     *
+     * @return el paquete de mayor peso
+     * @throws IllegalStateException si no hay paquetes registrados
+     */
+    public Paquete paqueteDeMayorPeso() {
+        if (paquetesRegistrados.isEmpty()) {
+            throw new IllegalStateException("No hay paquetes registrados para analizar.");
+        }
+        return paqueteDeMayorPesoRec(0, paquetesRegistrados.size() - 1);
+    }
+
+    /**
+     * Método recursivo que encuentra el paquete de mayor peso dentro del
+     * rango {@code [inicio, fin]} aplicando divide y vencerás.
+     *
+     * <p><b>Análisis recursivo:</b></p>
+     * <ul>
+     *   <li><b>Caso base:</b> {@code inicio == fin} → un solo elemento →
+     *       ese elemento es el mayor del rango.</li>
+     *   <li><b>Caso recursivo:</b> dividir el rango en dos mitades,
+     *       resolver cada mitad y quedarse con el de mayor peso.</li>
+     *   <li><b>Cómo se avanza:</b> cada llamada reduce el rango a la mitad.
+     *       El rango se vuelve más pequeño hasta llegar a un solo elemento.</li>
+     *   <li><b>Parámetros:</b> {@code inicio} y {@code fin}, que cambian
+     *       en cada llamada (mitad izquierda y mitad derecha).</li>
+     *   <li><b>Combinación:</b> se comparan los pesos de los ganadores de
+     *       cada mitad y se devuelve el mayor.</li>
+     * </ul>
+     *
+     * @param inicio índice inferior del rango
+     * @param fin índice superior del rango
+     * @return el paquete de mayor peso dentro del rango
+     */
+    private Paquete paqueteDeMayorPesoRec(int inicio, int fin) {
+        // CASO BASE: un solo elemento → es el mayor de ese rango
+        if (inicio == fin) {
+            return paquetesRegistrados.get(inicio);
+        }
+
+        // DIVIDIR: partir el rango en dos mitades
+        int medio = inicio + (fin - inicio) / 2;
+
+        // CONQUISTAR: encontrar el mayor de cada mitad
+        Paquete mayorIzquierda = paqueteDeMayorPesoRec(inicio, medio);
+        Paquete mayorDerecha = paqueteDeMayorPesoRec(medio + 1, fin);
+
+        // COMBINAR: devolver el mayor de los dos
+        return (mayorIzquierda.getPeso() >= mayorDerecha.getPeso())
+                ? mayorIzquierda
+                : mayorDerecha;
+    }
 
 
+    
 
 
 
