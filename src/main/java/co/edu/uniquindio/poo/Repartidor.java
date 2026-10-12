@@ -24,7 +24,7 @@ public class Repartidor implements Comparable<Repartidor> {
 
     /** Identificación única del repartidor. Formato esperado: {@code RP###}. */
     private final String identificacion;
-    
+
     /** Nombre completo del repartidor. No nulo ni vacío. */
     private final String nombre;
 

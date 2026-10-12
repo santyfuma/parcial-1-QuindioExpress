@@ -4,12 +4,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Implementación propia de una lista simplemente enlazada.
- *
- * <p>Esta clase <b>no utiliza</b> ninguna colección del Java Collections
- * Framework en su interior: ni ArrayList, ni LinkedList, ni Vector,
- * ni Stack, ni Queue, ni Deque. La estructura se construye únicamente
- * con referencias entre nodos.</p>
  *
  * <p>La lista es genérica y reutilizable con cualquier tipo {@code T}.</p>
  *
@@ -17,11 +11,6 @@ import java.util.NoSuchElementException;
  * implementa {@link Iterable} para permitir el recorrido con {@code for-each}
  * y expone únicamente los métodos definidos en {@link Coleccion}.</p>
  *
- * @param <T> tipo de los elementos almacenados
- *
- * @author Santiago
- * @version 1.0
- * @see Coleccion
  */
 public class ListaEnlazada<T> implements Coleccion<T>, Iterable<T> {
 
