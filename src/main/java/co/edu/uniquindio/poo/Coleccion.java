@@ -58,4 +58,12 @@ public interface Coleccion<T> {
      * @return {@code true} si está vacía, {@code false} en caso contrario
      */
     boolean estaVacia();
+
+    /**
+     * Indica si la colección contiene el elemento indicado.
+     *
+     * @param elemento elemento a buscar
+     * @return {@code true} si está presente, {@code false} en caso contrario
+     */
+    boolean contiene(T elemento);
 }

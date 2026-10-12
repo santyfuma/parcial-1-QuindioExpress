@@ -287,5 +287,214 @@ public class Sistema {
     public int getCantidadRepartidores() {
         return repartidores.size();
     }
-    
+
+    // ==================== ATENCIÓN DE PAQUETES ====================
+
+    /**
+     * Atiende el siguiente paquete respetando estrictamente el orden
+     * de registro (FIFO).
+     *
+     * <p>El paquete se elimina de todas las estructuras activas para
+     * evitar que siga apareciendo en colas o listas de pendientes.</p>
+     *
+     * @return el paquete atendido, o {@code null} si no hay pendientes
+     */
+    public Paquete atenderFifo() {
+        Paquete paquete = colaFifo.poll();
+        if (paquete != null) {
+            eliminarDeEstructurasActivas(paquete);
+        }
+        return paquete;
+    }
+
+    /**
+     * Atiende el siguiente paquete según las reglas de prioridad:
+     * <ol>
+     *   <li>Mayor prioridad primero.</li>
+     *   <li>Menor tiempo estimado en caso de empate.</li>
+     *   <li>Código alfabéticamente menor en caso de empate final.</li>
+     * </ol>
+     *
+     * @return el paquete atendido, o {@code null} si no hay pendientes
+     */
+    public Paquete atenderPorPrioridad() {
+        Paquete paquete = colaPrioridad.poll();
+        if (paquete != null) {
+            eliminarDeEstructurasActivas(paquete);
+        }
+        return paquete;
+    }
+
+    /**
+     * Elimina un paquete de todas las estructuras activas:
+     * cola FIFO, cola de prioridad, lista de registro y lista ordenada.
+     *
+     * <p>No se toca el historial de entregas ni el mapa de municipios,
+     * porque esa información se conserva para auditoría.</p>
+     *
+     * @param paquete paquete a eliminar
+     */
+    private void eliminarDeEstructurasActivas(Paquete paquete) {
+        colaFifo.remove(paquete);
+        colaPrioridad.remove(paquete);
+        paquetesRegistrados.remove(paquete);
+        paquetesOrdenadosPorCodigo.remove(paquete);
+    }
+
+    // ==================== ENTREGA ====================
+
+    /**
+     * Registra un paquete como entregado, agregándolo al historial.
+     *
+     * <p>El historial conserva estrictamente el orden de entrega. Si el
+     * paquete ya había sido entregado, no se duplica.</p>
+     *
+     * @param paquete paquete entregado, no nulo
+     * @throws IllegalArgumentException si el paquete es nulo
+     */
+    public void entregarPaquete(Paquete paquete) {
+        if (paquete == null) {
+            throw new IllegalArgumentException("El paquete no puede ser nulo.");
+        }
+        // Evitar duplicados en el historial
+        if (!historialEntregas.contiene(paquete)) {
+            historialEntregas.agregar(paquete);
+        }
+    }
+
+    // ==================== GETTERS ====================
+
+    /**
+     * Devuelve la cantidad de paquetes pendientes en la cola FIFO.
+     * @return cantidad de pendientes
+     */
+    public int getCantidadPendientes() {
+        return colaFifo.size();
+    }
+
+    /**
+     * Devuelve la cantidad de paquetes en el historial de entregas.
+     * @return cantidad de entregados
+     */
+    public int getCantidadEntregados() {
+        return historialEntregas.tamanio();
+    }
+
+    /**
+     * Devuelve la cantidad de municipios con al menos un paquete registrado.
+     * @return cantidad de municipios
+     */
+    public int getCantidadMunicipiosConPaquetes() {
+        return municipiosConPaquetes.size();
+    }
+
+    /**
+     * Devuelve una copia del conjunto de municipios sin duplicados.
+     * @return copia defensiva del conjunto
+     */
+    public Set<Municipio> getMunicipiosConPaquetes() {
+        return new HashSet<>(municipiosConPaquetes);
+    }
+
+    /**
+     * Devuelve una copia del conjunto de municipios ordenados alfabéticamente.
+     * @return copia defensiva del TreeSet
+     */
+    public TreeSet<Municipio> getMunicipiosOrdenados() {
+        return new TreeSet<>(municipiosOrdenados);
+    }
+
+    /**
+     * Devuelve los paquetes destinados a un municipio dado.
+     *
+     * @param municipio municipio a consultar
+     * @return copia de la lista de paquetes (vacía si no hay registros)
+     */
+    public List<Paquete> getPaquetesPorMunicipio(Municipio municipio) {
+        List<Paquete> paquetes = paquetesPorMunicipio.get(municipio);
+        return paquetes == null ? new ArrayList<>() : new ArrayList<>(paquetes);
+    }
+
+    /**
+     * Devuelve una copia de la lista de paquetes en orden de registro.
+     * @return copia defensiva de la lista
+     */
+    public List<Paquete> getPaquetesRegistrados() {
+        return new ArrayList<>(paquetesRegistrados);
+    }
+
+    /**
+     * Devuelve una copia de la lista de repartidores.
+     * @return copia defensiva de la lista
+     */
+    public List<Repartidor> getRepartidores() {
+        return new ArrayList<>(repartidores);
+    }
+
+    // ==================== MOSTRAR (para depuración y demos) ====================
+
+    /**
+     * Imprime en consola los paquetes pendientes en orden de registro.
+     */
+    public void mostrarPaquetesEnOrdenDeRegistro() {
+        System.out.println("=== Paquetes pendientes (orden de registro) ===");
+        if (colaFifo.isEmpty()) {
+            System.out.println("(No hay paquetes pendientes)");
+            return;
+        }
+        for (Paquete p : colaFifo) {
+            System.out.println(p);
+        }
+    }
+
+    /**
+     * Imprime en consola los paquetes ordenados por prioridad de despacho.
+     */
+    public void mostrarPaquetesPorPrioridadDeDespacho() {
+        System.out.println("=== Paquetes pendientes (orden de despacho) ===");
+        if (colaPrioridad.isEmpty()) {
+            System.out.println("(No hay paquetes pendientes)");
+            return;
+        }
+        // Se usa una copia para no consumir la cola original
+        List<Paquete> copia = new ArrayList<>(colaPrioridad);
+        copia.sort(Comparators.PARA_DESPACHO);
+        for (Paquete p : copia) {
+            System.out.println(p);
+        }
+    }
+
+    /**
+     * Imprime en consola el historial de entregas en orden cronológico.
+     */
+    public void mostrarHistorialDeEntregas() {
+        System.out.println("=== Historial de entregas (orden de entrega) ===");
+        if (historialEntregas.estaVacia()) {
+            System.out.println("(No hay entregas registradas)");
+            return;
+        }
+        // Recorrido usando el iterador propio de la ListaEnlazada (for-each)
+        for (Paquete p : historialEntregas) {
+            System.out.println(p);
+        }
+    }
+
+    /**
+     * Imprime en consola los municipios ordenados alfabéticamente.
+     */
+    public void mostrarMunicipiosOrdenados() {
+        System.out.println("=== Municipios con paquetes (orden alfabético) ===");
+        if (municipiosOrdenados.isEmpty()) {
+            System.out.println("(No hay municipios registrados)");
+            return;
+        }
+        for (Municipio m : municipiosOrdenados) {
+            System.out.println(m);
+        }
+    }
+
+
+
+
+
 }

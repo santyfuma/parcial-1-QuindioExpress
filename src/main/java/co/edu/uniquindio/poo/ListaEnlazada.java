@@ -167,4 +167,20 @@ public class ListaEnlazada<T> implements Coleccion<T>, Iterable<T> {
         sb.append("]");
         return sb.toString();
     }
+
+    @Override
+    public boolean contiene(T elemento) {
+        if (elemento == null) {
+            return false;
+        }
+        Nodo<T> actual = cabeza;
+        while (actual != null) {
+            if (actual.valor.equals(elemento)) {
+                return true;
+            }
+            actual = actual.siguiente;
+        }
+        return false;
+    }
+
 }
