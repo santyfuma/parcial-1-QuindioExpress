@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-public class Repartidor implements Identificador {
+public class Repartidor  {
 
     private static final Set<String> codigosGenerados = new HashSet<>();
     private static final Random random =  new Random();
@@ -27,10 +27,10 @@ public class Repartidor implements Identificador {
      *  Metodo para generar identificador del repartidor(RP) - se limita en 999
      * @return codigo unico de repartidor
      */
-    @Override
+
     public synchronized String generarIdentificador() {
 
-        if(codigosGenerados.size()<=1000) {
+        if(codigosGenerados.size()>=1000) {
             throw new IllegalArgumentException("Se agotaron los codigos de repartidores (RP) disponibles.");
         }
         String codigoGenerado;

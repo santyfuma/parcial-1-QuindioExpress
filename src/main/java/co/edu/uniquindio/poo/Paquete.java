@@ -1,22 +1,33 @@
 package co.edu.uniquindio.poo;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
+import java.util.Objects;
 
-public class Paquete implements Identificador {
+/**
+ * Representa un paquete gestionado por QuindíoExpress.
+ *
+ * Orden natural: por código ascendente (PQ105 < PQ318 < PQ942).
+ * Dos paquetes son iguales si tienen el mismo código.
+ *
+ * El código NO se genera aquí: el Sistema es responsable de generar
+ * códigos únicos y pasarlos al constructor.
+ */
+public class Paquete implements Comparable<Paquete> {
 
-    private static final Set<String> codigosGenerados = new HashSet<>();
-    private static final Random random = new Random();
+    private final String codigo;
+    private final Municipio destino;
+    private final float peso;
+    private final int prioridad;      // 1 (mínima) a 5 (máxima)
+    private final int tiempoEstimado; // minutos
 
-    private String codigo;
-    private Municipio destino;
-    private float peso;
-    private int prioridad;
-    private int tiempoEstimado;
+    public Paquete(String codigo,
+                   Municipio destino,
+                   float peso,
+                   int prioridad,
+                   int tiempoEstimado) {
 
-    public Paquete(Municipio destino, float peso, int prioridad, int tiempoEstimado) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("El código es obligatorio.");
+        }
         if (destino == null) {
             throw new IllegalArgumentException("El destino no puede ser nulo.");
         }
@@ -30,37 +41,52 @@ public class Paquete implements Identificador {
             throw new IllegalArgumentException("El tiempo estimado debe ser positivo.");
         }
 
+        this.codigo = codigo;
         this.destino = destino;
         this.peso = peso;
         this.prioridad = prioridad;
         this.tiempoEstimado = tiempoEstimado;
-        this.codigo = generarIdentificador();
     }
 
+    // ==================== GETTERS ====================
 
-    /**
-     * Metodo para generar el identificador unico del paquete (PQ) - se limita en 999
-     * @return codigo unico de paquete
-     */
+    public String getCodigo()         { return codigo; }
+    public Municipio getDestino()     { return destino; }
+    public float getPeso()            { return peso; }
+    public int getPrioridad()         { return prioridad; }
+    public int getTiempoEstimado()    { return tiempoEstimado; }
+
+    // ==================== EQUALS / HASHCODE ====================
+    // Dos paquetes son iguales si tienen el mismo código.
+
     @Override
-    public synchronized String generarIdentificador() {
-
-        if (codigosGenerados.size() >= 1000) {
-            throw new IllegalStateException("Se agotaron los códigos de paquetes disponibles.");
-        }
-        String codigoGenerado;
-        do {
-            int numero = random.nextInt(1000);
-            codigoGenerado = String.format("PQ%03d", numero);
-        } while (codigosGenerados.contains(codigoGenerado));
-        codigosGenerados.add(codigoGenerado);
-
-        return codigoGenerado;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Paquete)) return false;
+        Paquete paquete = (Paquete) o;
+        return Objects.equals(codigo, paquete.codigo);
     }
 
-    public String getCodigo() {
-        return codigo;
+    @Override
+    public int hashCode() {
+        return Objects.hash(codigo);
+    }
+
+    // ==================== COMPARABLE ====================
+    // Orden natural: código ascendente. Ej: PQ105 < PQ318 < PQ942.
+
+    @Override
+    public int compareTo(Paquete otro) {
+        return this.codigo.compareTo(otro.codigo);
+    }
+
+    // ==================== TOSTRING ====================
+
+    @Override
+    public String toString() {
+        return String.format(
+                "Paquete[%s → %s, %.1f kg, prioridad %d, %d min]",
+                codigo, destino, peso, prioridad, tiempoEstimado
+        );
     }
 }
-
-
