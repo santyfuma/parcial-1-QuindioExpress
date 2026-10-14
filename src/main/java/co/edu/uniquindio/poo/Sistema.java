@@ -1,17 +1,6 @@
 package co.edu.uniquindio.poo;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Clase principal del sistema QuindíoExpress. Gestiona el registro,
@@ -69,7 +58,7 @@ public class Sistema {
     private final List<Paquete> paquetesOrdenadosPorCodigo;
 
     /** Paquetes pendientes de despacho en orden FIFO. */
-    private final Queue<Paquete> colaFifo;
+    private final Deque<Paquete> colaFifo;
 
     /** Paquetes pendientes ordenados por prioridad de despacho. */
     private final PriorityQueue<Paquete> colaPrioridad;
@@ -87,6 +76,9 @@ public class Sistema {
 
     /** Relación municipio → lista de paquetes destinados a él. */
     private final Map<Municipio, List<Paquete>> paquetesPorMunicipio;
+
+    /** Relación paquete → repartidor asignado para la entrega. */
+    private final Map<Paquete, Repartidor> asignaciones;
 
     // ==================== REPARTIDORES ====================
 
@@ -114,6 +106,7 @@ public class Sistema {
         this.paquetesPorMunicipio = new HashMap<>();
 
         this.repartidores = new ArrayList<>();
+        this.asignaciones = new HashMap<>();
     }
 
     // ==================== GENERACIÓN DE CÓDIGOS ====================
@@ -326,6 +319,23 @@ public class Sistema {
     public int getCantidadRepartidores() {
         return repartidores.size();
     }
+    /**
+     * Devuelve una copia del historial de entregas como una lista de Java,
+     * para facilitar consultas externas sin exponer la estructura propia.
+     *
+     * <p>La lista devuelta es una <b>copia</b>: modificarla no afecta al
+     * historial interno del sistema. El orden se conserva igual al orden
+     * cronológico de entrega.</p>
+     *
+     * @return lista con los paquetes entregados en orden de entrega
+     */
+    public List<Paquete> getHistorialEntregados() {
+        List<Paquete> copia = new ArrayList<>();
+        for (Paquete p : historialEntregas) {
+            copia.add(p);
+        }
+        return copia;
+    }
 
     // ==================== ATENCIÓN DE PAQUETES ====================
 
@@ -381,12 +391,11 @@ public class Sistema {
     }
 
     // ==================== ENTREGA ====================
-
     /**
      * Registra un paquete como entregado, agregándolo al historial.
      *
-     * <p>El historial conserva estrictamente el orden de entrega. Si el
-     * paquete ya había sido entregado, no se duplica.</p>
+     * <p>Si el paquete tenía un repartidor asignado, se libera
+     * automáticamente para que pueda recibir nuevas asignaciones.</p>
      *
      * @param paquete paquete entregado, no nulo
      * @throws IllegalArgumentException si el paquete es nulo
@@ -395,9 +404,14 @@ public class Sistema {
         if (paquete == null) {
             throw new IllegalArgumentException("El paquete no puede ser nulo.");
         }
-        // Evitar duplicados en el historial
         if (!historialEntregas.contiene(paquete)) {
             historialEntregas.agregar(paquete);
+        }
+
+        // Liberar al repartidor asignado (si lo había)
+        Repartidor repartidor = asignaciones.remove(paquete);
+        if (repartidor != null) {
+            repartidor.setDisponible(true);
         }
     }
 
@@ -784,6 +798,98 @@ public class Sistema {
         return (mayorIzquierda.getPeso() >= mayorDerecha.getPeso())
                 ? mayorIzquierda
                 : mayorDerecha;
+    }
+
+
+    // ==================== ASIGNACIÓN DE REPARTIDORES ====================
+
+    /**
+     * Asigna un paquete a un repartidor disponible cuya zona coincida
+     * con el destino del paquete.
+     *
+     * <p><b>Reglas aplicadas:</b></p>
+     * <ul>
+     *   <li>El paquete debe estar registrado en el sistema.</li>
+     *   <li>El repartidor debe estar disponible.</li>
+     *   <li>La zona del repartidor debe coincidir con el destino del paquete.</li>
+     *   <li>Un paquete no puede tener dos repartidores asignados a la vez.</li>
+     * </ul>
+     *
+     * <p>Si no se encuentra un repartidor adecuado, devuelve {@code null}
+     * y el paquete queda sin asignar (podrá intentarse más tarde).</p>
+     *
+     * @param paquete paquete a asignar
+     * @return el repartidor asignado, o {@code null} si no hay disponible
+     * @throws IllegalArgumentException si el paquete es nulo o no está registrado
+     */
+    public Repartidor asignarPaqueteARepartidor(Paquete paquete) {
+        if (paquete == null) {
+            throw new IllegalArgumentException("El paquete no puede ser nulo.");
+        }
+        if (!paquetesRegistrados.contains(paquete)) {
+            throw new IllegalArgumentException(
+                    "El paquete " + paquete.getCodigo() + " no está registrado en el sistema."
+            );
+        }
+        if (asignaciones.containsKey(paquete)) {
+            throw new IllegalStateException(
+                    "El paquete " + paquete.getCodigo() + " ya tiene un repartidor asignado."
+            );
+        }
+
+        Municipio destino = paquete.getDestino();
+
+        for (Repartidor r : repartidores) {
+            if (r.isDisponible() && r.getZona() == destino) {
+                r.setDisponible(false);
+                asignaciones.put(paquete, r);
+                return r;
+            }
+        }
+        return null; // no hay repartidor disponible en esa zona
+    }
+
+    /**
+     * Busca un repartidor por su identificación única.
+     *
+     * @param identificacion identificación del repartidor
+     * @return el repartidor encontrado
+     * @throws IllegalArgumentException si la identificación es nula o vacía
+     * @throws java.util.NoSuchElementException si no existe el repartidor
+     */
+    public Repartidor buscarRepartidorPorIdentificacion(String identificacion) {
+        if (identificacion == null || identificacion.isBlank()) {
+            throw new IllegalArgumentException("La identificación no puede ser nula ni vacía.");
+        }
+        for (Repartidor r : repartidores) {
+            if (r.getIdentificacion().equals(identificacion)) {
+                return r;
+            }
+        }
+        throw new java.util.NoSuchElementException(
+                "No existe un repartidor con la identificación " + identificacion
+        );
+    }
+
+    /**
+     * Devuelve el repartidor asignado a un paquete, o {@code null} si no
+     * tiene ninguno.
+     *
+     * @param paquete paquete a consultar
+     * @return el repartidor asignado o {@code null}
+     */
+    public Repartidor getRepartidorDePaquete(Paquete paquete) {
+        return asignaciones.get(paquete);
+    }
+
+    /**
+     * Devuelve la cantidad de paquetes con repartidor asignado pendientes
+     * de entrega.
+     *
+     * @return cantidad de asignaciones activas
+     */
+    public int getCantidadAsignacionesActivas() {
+        return asignaciones.size();
     }
 
 

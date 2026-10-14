@@ -1,5 +1,6 @@
 package co.edu.uniquindio.poo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -192,6 +193,59 @@ public class Main {
         System.out.println("\n--- 13. Divide y vencerás: paquete de mayor peso ---");
         Paquete masPesado = sistema.paqueteDeMayorPeso();
         System.out.println("Paquete de mayor peso: " + masPesado);
+
+
+        // =====================================================
+        // 13.5. ASIGNACIÓN DE PAQUETES A REPARTIDORES
+        // =====================================================
+        System.out.println("\n--- 13.5. Asignación de repartidores ---");
+
+        // Tomamos 5 paquetes pendientes de distintas zonas
+        List<Paquete> pendientes = new ArrayList<>(sistema.getPaquetesRegistrados());
+
+        // Filtrar solo pendientes (los que aún no se entregaron)
+        List<Paquete> porAsignar = new ArrayList<>();
+        for (Paquete p : pendientes) {
+            if (sistema.getRepartidorDePaquete(p) == null
+                    && !sistema.getHistorialEntregados().contains(p)) {
+                porAsignar.add(p);
+            }
+            if (porAsignar.size() == 5) break;
+        }
+
+        for (Paquete p : porAsignar) {
+            Repartidor r = sistema.asignarPaqueteARepartidor(p);
+            if (r != null) {
+                System.out.println("Asignado " + p.getCodigo()
+                        + " (→" + p.getDestino() + ") a " + r.getNombre()
+                        + " [" + r.getIdentificacion() + "]");
+            } else {
+                System.out.println("Sin repartidor disponible en "
+                        + p.getDestino() + " para " + p.getCodigo());
+            }
+        }
+        System.out.println("Asignaciones activas: "
+                + sistema.getCantidadAsignacionesActivas());
+
+        // Intentar asignar el mismo paquete dos veces → error
+        if (!porAsignar.isEmpty()) {
+            Paquete repetido = porAsignar.get(0);
+            try {
+                sistema.asignarPaqueteARepartidor(repetido);
+            } catch (IllegalStateException e) {
+                System.out.println("Error esperado: " + e.getMessage());
+            }
+        }
+
+        // Entregar un paquete asignado → el repartidor se libera
+        if (!porAsignar.isEmpty()) {
+            Paquete primero = porAsignar.get(0);
+            Repartidor asignadoAntes = sistema.getRepartidorDePaquete(primero);
+            sistema.entregarPaquete(primero);
+            System.out.println("Tras entregar " + primero.getCodigo()
+                    + ", repartidor " + asignadoAntes.getIdentificacion()
+                    + " disponible=" + asignadoAntes.isDisponible());
+        }
 
         // =====================================================
         // 14. RESUMEN FINAL
